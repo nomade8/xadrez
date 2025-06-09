@@ -55,7 +55,7 @@ class ChessGame {
             this.renderer.domElement.addEventListener('click', (event) => this.onBoardClick(event));
 
             // Update initial game status
-            document.getElementById('game-status').textContent = 'Sua vez';
+            this.updateBoard();
 
             // Start animation loop
             this.animate();
@@ -198,8 +198,27 @@ class ChessGame {
         this.createPieces();
 
         // Update game status
-        document.getElementById('game-status').textContent = 
-            this.chessGame.isGameOver() ? 'Fim de jogo!' : 'Sua vez';
+        const playerTurn = this.chessGame.turn();
+        let status = '';
+
+        if (this.chessGame.isGameOver()) {
+            if (this.chessGame.isCheckmate()) {
+                status = `Xeque-mate! ${playerTurn === 'w' ? 'Pretas' : 'Brancas'} venceu.`;
+            } else if (this.chessGame.isStalemate()) {
+                status = 'Empate por afogamento!';
+            } else if (this.chessGame.isThreefoldRepetition()) {
+                status = 'Empate por repetição!';
+            } else if (this.chessGame.isInsufficientMaterial()) {
+                status = 'Empate por material insuficiente!';
+            } else if (this.chessGame.isDraw()) { // General draw, could be 50-move rule
+                status = 'Empate!';
+            } else {
+                status = 'Fim de jogo!'; // Fallback
+            }
+        } else {
+            status = `Sua vez (${playerTurn === 'w' ? 'Brancas' : 'Pretas'})`;
+        }
+        document.getElementById('game-status').textContent = status;
     }    animateMove(moveResult) {
         if (!moveResult) return;
         
@@ -214,7 +233,7 @@ class ChessGame {
 
         // Calcular posições no tabuleiro
         const toX = moveResult.to.charCodeAt(0) - 97 - 3.5; // Convertendo para coordenadas 3D
-        const toZ = -(8 - parseInt(moveResult.to[1]) - 3.5); // Invertendo Z para corresponder à notação do xadrez
+        const toZ = (8 - parseInt(moveResult.to[1])) - 3.5; // Invertendo Z para corresponder à notação do xadrez
 
         console.log('Moving from:', moveResult.from, 'to:', moveResult.to);
         console.log('Initial position:', piece.position);
@@ -252,6 +271,7 @@ class ChessGame {
                 if (moveResult.color === 'w') {
                     setTimeout(() => this.makeComputerMove(), 300);
                 }
+                this.updateBoard(); // Refresh status and board
                 return;
             }
 
